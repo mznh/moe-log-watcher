@@ -53,6 +53,8 @@ class MoEMessageLogger
     puts "監視ログ場所: #{@userdata_path}"
     puts "受理ログ場所: #{outer_log_path}"
     puts "=========================================="
+    puts "終了は Ctrl + C"
+    puts "=========================================="
 
     # 過去の処理済みlogをオンメモリに読み込み
     @msg_store = File.readlines(outer_log_path).map do |log_line| 
