@@ -5,10 +5,11 @@ require "./log_watcher"
 
 class MoELogWatcher
   def throw_message msg
-    puts "#{msg.received_date} #{msg.received_time}: 受理"
-    msg.print
-    if res = msg.is_tell? then
-      p res
+    p msg
+    if res = msg.is_auction_channel? then
+      p res["channel_name"]
+      p res["from_name"]
+      p res["message"]
     end
   end
 end

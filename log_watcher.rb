@@ -29,7 +29,11 @@ class MoELogRecord
   end
 
   def inspect
-    "#{@date} #{@time}: #{@message}"
+    <<~EOS
+      date:#{@date}
+      time:#{@time}
+      message:#{@message}
+    EOS
   end
 
   def to_json
@@ -48,8 +52,46 @@ class MoELogRecord
   end
 
   ## メッセージタイプ判別
+  # 自由記述含む正規表現なので気休め程度
+  # 厳密にやるなら吐き出すログファイルのファイル名を使う必要あり
+  
+  def is_say?
+    @message.match(/(?<from_name>\S+) は言った : (?<message>.+)/)
+  end
   def is_tell?
-    @message.match(/(?<from_name>\S+) は (?<to_name>\S+) に言った : (?<message>.+)/)
+    res = @message.match(/(?<from_name>\S+) は (?<to_name>\S+) に言った : (?<message>.+)/)
+    if not res.nil? and res["to_name"] == "パーティ" then 
+      nil
+    else
+      res
+    end
+  end
+
+  def is_party?
+    @message.match(/(?<from_name>\S+) は パーティ に言った : (?<message>.+)/)
+  end
+
+  def is_channel?
+    @message.match(/(?<channel_slot>\d):\((?<channel_name>\S+)\) (?<from_name>\S+) : (?<message>.+)/)
+  end
+  def is_auction_channel?
+    @message.match(/(?<channel_slot>\d):<(?<channel_name>\S+)> (?<from_name>\S+) : (?<message>.+)/)
+  end
+
+  def is_type
+    if is_say? then 
+      "SAY" 
+    elsif is_tell? then 
+      "TELL"
+    elsif is_party? then 
+      "PARTY"
+    elsif is_channel? then
+      "CHANNEL"
+    elsif is_auction_channel? then 
+      "AUCTION_CHANNEL"
+    else 
+      "UNKNOWN"
+    end
   end
 end
 
@@ -73,9 +115,7 @@ class MoELogWatcher
 
     # 過去の処理済みlogをオンメモリに読み込み
     @msg_store = File.readlines(outer_log_path).map do |json_line| 
-      msg = MoELogRecord.from_json(JSON.parse(json_line))
-      #puts "処理済みコメント： #{log_line}"
-      msg
+      MoELogRecord.from_json(JSON.parse(json_line))
     end
 
     # 処理済みlog書き込み用FileStream
@@ -85,7 +125,7 @@ class MoELogWatcher
   # 特定のログファイルを全て読み込んでMoEMessage オブジェクトの配列に変換
   def read_log_file(file_path)
     body = File.read(file_path, encoding: 'Shift_JIS:UTF-8')
-    res =  body.split(/(?<date>\d{2}\/\d{2}\/\d{2}) (?<time>\d{2}:\d{2}:\d{2}):/)
+    res =  body.split(/(?<date>\d{2}\/\d{2}\/\d{2}) (?<time>\d{2}:\d{2}:\d{2}): /)
     res.shift # 先頭の空文字列を削除
     res.map(&:chomp).each_slice(3).map{|date,time,message| MoELogRecord.new(date,time,message,file_path) }
   end
