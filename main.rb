@@ -3,7 +3,7 @@
 require "./log_watcher"
 
 
-class MoEMessageLogger
+class MoELogWatcher
   def throw_message msg
     puts "#{msg.received_date} #{msg.received_time}: 受理"
     msg.print
@@ -13,6 +13,6 @@ class MoEMessageLogger
   end
 end
 
-moe_logger = MoEMessageLogger.new("/mnt/c/MOE/Master of Epic/userdata/DIAMOND_カリガカリ_/")
-moe_logger.run
+moe_log_watcher = MoELogWatcher.new("/mnt/c/MOE/Master of Epic/userdata/DIAMOND_カリガカリ_/")
+moe_log_watcher.run
 

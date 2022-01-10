@@ -7,7 +7,7 @@ require 'digest/md5'
 require 'time'
 
 
-class MoEMessage
+class MoELogRecord
 
   attr_accessor :date,:time,:message, :finger_print
   attr_accessor :received_date, :received_time
@@ -41,7 +41,7 @@ class MoEMessage
     }.to_json
   end
   def self.from_json json_object
-    msg = MoEMessage.new(json_object["date"],json_object["time"],json_object["message"],json_object["recorded_file"])
+    msg = MoELogRecord.new(json_object["date"],json_object["time"],json_object["message"],json_object["recorded_file"])
     msg.received_date = json_object["received_date"]
     msg.received_time = json_object["received_time"]
     msg 
@@ -54,7 +54,7 @@ class MoEMessage
 end
 
 
-class MoEMessageLogger
+class MoELogWatcher
   def initialize userdata_path
     # WSLからみた 対象とするキャラクターのuser_data path
     @userdata_path = userdata_path
@@ -73,7 +73,7 @@ class MoEMessageLogger
 
     # 過去の処理済みlogをオンメモリに読み込み
     @msg_store = File.readlines(outer_log_path).map do |json_line| 
-      msg = MoEMessage.from_json(JSON.parse(json_line))
+      msg = MoELogRecord.from_json(JSON.parse(json_line))
       #puts "処理済みコメント： #{log_line}"
       msg
     end
@@ -87,7 +87,7 @@ class MoEMessageLogger
     body = File.read(file_path, encoding: 'Shift_JIS:UTF-8')
     res =  body.split(/(?<date>\d{2}\/\d{2}\/\d{2}) (?<time>\d{2}:\d{2}:\d{2}):/)
     res.shift # 先頭の空文字列を削除
-    res.map(&:chomp).each_slice(3).map{|date,time,message| MoEMessage.new(date,time,message,file_path) }
+    res.map(&:chomp).each_slice(3).map{|date,time,message| MoELogRecord.new(date,time,message,file_path) }
   end
 
   def run
@@ -115,7 +115,7 @@ class MoEMessageLogger
       listener.start
       sleep
     rescue Interrupt
-      puts "MoE MessageLogger を終了します"
+      puts "MoE Log Watcher を終了します"
       @log_store_fs.close
     end
   end
